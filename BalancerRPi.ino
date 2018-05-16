@@ -72,7 +72,7 @@ void playSong()
 }
 
 int8_t setAngularVelocity(float angularVelocity) {
-  int8_t wheelSpeed = angularVelocity * GEAR_RATIO * 12 * 4 / 6 / 1000 / 100;
+  int8_t wheelSpeed = angularVelocity * GEAR_RATIO * 12 * 4 / 6 / 1000 / 10;
   return wheelSpeed;
 }
 
@@ -142,11 +142,13 @@ void layDown() {
 }
 
 void executeCommand() {
+  Serial.print("D: command received: ");
+  Serial.println(commandString);
   if (commandString[0] == 'S') {
-    Serial.println("standUp");
+    Serial.println("D: standUp");
     standUp();
   } else if (commandString[0] == 'L') {
-    Serial.println("layDown");
+    Serial.println("D: layDown");
     layDown();
   } else {
     String velocityStrings[2];
@@ -157,9 +159,20 @@ void executeCommand() {
         break;
       } else if (sign == ' ') {
         j++;
-      } else if (isDigit(sign)) {
+      } else if (isDigit(sign) || (sign == '-' && velocityStrings[j].length() == 0)) {
         velocityStrings[j] += sign;
+      } else {
+        Serial.println("E: Error in command parsing. Sign unknown.");
+        return;
       }
+      if (j > 1) {
+        Serial.println("E: Error in command parsing. Too many spaces.");
+        return;
+      }
+    }
+    if (j < 1) {
+      Serial.println("E: Error in command parsing. Too few values.");
+      return;
     }
     int velocities[2];
     for (int i = 0; i<2; i++) {
@@ -170,8 +183,6 @@ void executeCommand() {
     velocity = velocities[1];
     speedL = -setAngularVelocity(angularVelocity) - setVelocity(velocity);
     speedR = setAngularVelocity(angularVelocity) - setVelocity(velocity);
-    Serial.println(speedL);
-    Serial.println(speedR);
     balanceDrive(speedL, speedR);
   }
   lastCommand = millis();

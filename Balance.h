@@ -9,12 +9,12 @@
 // Adjust the ratio below to scale various constants in the
 // balancing algorithm to match your robot.
 
-//#define B11 false
-#define B11 true
+#define B11 false
+//#define B11 true
 #if B11
 const int16_t GEAR_RATIO = 84; //124; //b11
 #else
-const int16_t GEAR_RATIO = 162; //111; //b10
+const int16_t GEAR_RATIO = 111;// 162; //111; //b10
 #endif
 
 
