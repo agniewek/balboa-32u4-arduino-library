@@ -28,9 +28,11 @@
 #include <Balboa32U4.h>
 #include <Wire.h>
 #include <LSM6.h>
+#include <LIS3MDL.h>
 #include "Balance.h"
 
 LSM6 imu;
+LIS3MDL mag;
 Balboa32U4Motors motors;
 Balboa32U4Encoders encoders;
 Balboa32U4Buzzer buzzer;
@@ -40,8 +42,19 @@ uint16_t lastSent = millis();
 bool musicOn = false;
 bool controlled = true;
 uint32_t lastCommand = millis();
+int16_t lastEncoderLeft = 0, lastEncoderRight = 0;
 
 String commandString = "";
+char accValues[40], gyroValues[40], magValues[40], odomValues[40];
+void initMag() {
+  if (!mag.init())
+  {
+    Serial.println("Failed to detect and initialize magnetometer!");
+    while (1);
+  }
+
+  mag.enableDefault();
+}
 
 void setup()
 {
@@ -52,6 +65,7 @@ void setup()
   ledYellow(0);
   ledRed(1);
   balanceSetup();
+  initMag();
   ledRed(0);
 }
 
@@ -203,27 +217,57 @@ char readSerial() {
   }
 }
 
+void publishIMU() {
+  snprintf(accValues, sizeof(accValues), "A: %6d %6d %6d",
+    imu.a.x, imu.a.y, imu.a.z);
+  Serial.println(accValues);
+
+  snprintf(gyroValues, sizeof(gyroValues), "G: %6d %6d %6d",
+    imu.g.x, imu.g.y, imu.g.z);
+  Serial.println(gyroValues);
+
+  snprintf(magValues, sizeof(magValues), "M: %6d %6d %6d",
+    mag.m.x, mag.m.y, mag.m.z);
+  Serial.println(magValues);
+}
+
+void publishOdometry() {
+  int16_t encoderLeft = encoders.getCountsLeft();
+  int16_t encoderRight = encoders.getCountsRight();
+  snprintf(odomValues, sizeof(odomValues), "O: %6d %6d %6d %6d",
+    encoderLeft - lastEncoderLeft, encoderRight - lastEncoderRight,
+    encoderLeft, encoderRight);
+  Serial.println(odomValues);
+  lastEncoderLeft = encoderLeft;
+  lastEncoderRight = encoderRight;
+}
+
+void publishTelemetry() {
+  publishIMU();
+  publishOdometry();
+}
+
 void loop()
 {
   balanceUpdate();
   uint16_t timeNow = millis();
-
-  if(timeNow - lastSent > 400) {
-    Serial.println(imu.a.x);
-    //Serial.println(Serial.available());
-
+  
+  if (timeNow - lastSent > 200) {
+    mag.read();
+    publishTelemetry();
     lastSent = timeNow;
   }
-
+  
   if(controlled) {
     int8_t speedL, speedR, angularVelocity, velocity;
     angularVelocity = 0;
     velocity = 0;
     readSerial();
-    if (millis() - lastCommand > 1000) {
+    if (timeNow - lastCommand > 1000) {
       stop();
     }
   }
+
 
 
   if (isBalancing() && musicOn) {
