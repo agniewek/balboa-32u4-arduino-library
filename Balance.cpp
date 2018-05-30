@@ -197,7 +197,7 @@ void balanceUpdate()
   balanceUpdateSensors();
   balanceDoDriveTicks();
 
-  if (imu.a.x < 7000)
+  if ((imu.a.x < 1000 && imu.a.z > 0) || (imu.a.x < 7500 && imu.a.z < 0))
   {
     lyingDown();
     isBalancingStatus = false;

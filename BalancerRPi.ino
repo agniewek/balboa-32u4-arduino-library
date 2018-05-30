@@ -45,11 +45,11 @@ uint32_t lastCommand = millis();
 int16_t lastEncoderLeft = 0, lastEncoderRight = 0;
 
 String commandString = "";
-char accValues[40], gyroValues[40], magValues[40], odomValues[40];
+char accValues[40], gyroValues[40], magValues[40], odomValues[40], debugTelemetry[40];
 void initMag() {
   if (!mag.init())
   {
-    Serial.println("Failed to detect and initialize magnetometer!");
+    Serial.println("E: Failed to detect and initialize magnetometer!");
     while (1);
   }
 
@@ -61,12 +61,13 @@ void setup()
   // Uncomment these lines if your motors are reversed.
   // motors.flipLeftMotor(true);
   // motors.flipRightMotor(true);
-  motors.allowTurbo(true);
+  //motors.allowTurbo(true);
   ledYellow(0);
   ledRed(1);
   balanceSetup();
   initMag();
   ledRed(0);
+  Serial.begin(115200);
 }
 
 const char song[] PROGMEM =
@@ -133,13 +134,14 @@ void standUp()
   while (buzzer.isPlaying());
   motors.setSpeeds(-MOTOR_SPEED_LIMIT, -MOTOR_SPEED_LIMIT);
   delay(200);
-  motors.setSpeeds(310, 310); //MOTOR_SPEED_LIMIT, MOTOR_SPEED_LIMIT);
+  motors.setSpeeds(MOTOR_SPEED_LIMIT, MOTOR_SPEED_LIMIT);
   for (uint8_t i = 0; i < 30; i++)
   {
     delay(UPDATE_TIME_MS);
     balanceUpdateSensors();
-    if(angle < 60000)
+    if(angle < 50000)
     {
+      Serial.println("D: Start balancing!");
       break;
     }
   }
@@ -245,6 +247,8 @@ void publishOdometry() {
 void publishTelemetry() {
   publishIMU();
   publishOdometry();
+  snprintf(debugTelemetry, sizeof(debugTelemetry), "DT: %6ld %6d", angle, motorSpeed);
+  Serial.println(debugTelemetry);
 }
 
 void loop()
@@ -252,9 +256,9 @@ void loop()
   balanceUpdate();
   uint16_t timeNow = millis();
   
-  if (timeNow - lastSent > 200) {
-    mag.read();
-    publishTelemetry();
+  if (timeNow - lastSent > 100) {
+    //mag.read();
+    //publishTelemetry();
     lastSent = timeNow;
   }
   
