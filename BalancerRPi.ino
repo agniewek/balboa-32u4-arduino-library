@@ -1,3 +1,4 @@
+
 // This example shows how to make a Balboa balance on its two
 // wheels and drive around while balancing.
 //
@@ -26,10 +27,14 @@
 // play a song.
 
 #include <Balboa32U4.h>
+#include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <LSM6.h>
 #include <LIS3MDL.h>
 #include "Balance.h"
+
+#define NEO_PIN 1
+#define NUM_LEDS 8
 
 LSM6 imu;
 LIS3MDL mag;
@@ -41,8 +46,11 @@ Balboa32U4ButtonB buttonB;
 uint16_t lastSent = millis();
 bool musicOn = false;
 bool controlled = true;
+bool driving = false;
 uint32_t lastCommand = millis();
+uint32_t lastMagRead = millis();
 int16_t lastEncoderLeft = 0, lastEncoderRight = 0;
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, NEO_PIN, NEO_RGBW + NEO_KHZ800);
 
 String commandString = "";
 char accValues[40], gyroValues[40], magValues[40], odomValues[40], debugTelemetry[40];
@@ -68,6 +76,8 @@ void setup()
   initMag();
   ledRed(0);
   Serial.begin(115200);
+  strip.begin();
+  strip.show();
 }
 
 const char song[] PROGMEM =
@@ -87,12 +97,13 @@ void playSong()
 }
 
 int8_t setAngularVelocity(float angularVelocity) {
-  int8_t wheelSpeed = angularVelocity * GEAR_RATIO * 12 * 4 / 6 / 1000 / 10;
+  int8_t wheelSpeed = angularVelocity * GEAR_RATIO * 12 * 4 / 6 / 1000 / 20;
+  Serial.println(wheelSpeed);
   return wheelSpeed;
 }
 
 int8_t setVelocity(float velocity) {
-  int8_t wheelSpeed = velocity * GEAR_RATIO * 12 / 4 / 1000;
+  int8_t wheelSpeed = velocity * GEAR_RATIO * 12 / 4 / 1000 * 7 / 5;
   return wheelSpeed;
 }
 
@@ -102,23 +113,23 @@ void driveAround()
   uint16_t leftSpeed, rightSpeed;
   if (time < 1900)
   {
-    leftSpeed = 20;
-    rightSpeed = 20;
+    leftSpeed = 40;
+    rightSpeed = 40;
   }
   else if (time < 4096)
   {
-    leftSpeed = 25;
-    rightSpeed = 15;
+    leftSpeed = 45;
+    rightSpeed = 25;
   }
   else if (time < 4096 + 1900)
   {
-    leftSpeed = 20;
-    rightSpeed = 20;
+    leftSpeed = 40;
+    rightSpeed = 40;
   }
   else
   {
-    leftSpeed = 15;
-    rightSpeed = 25;
+    leftSpeed = 25;
+    rightSpeed = 45;
   }
 
   balanceDrive(leftSpeed/8, rightSpeed/8);
@@ -166,10 +177,43 @@ void executeCommand() {
   } else if (commandString[0] == 'L') {
     Serial.println("D: layDown");
     layDown();
-  } else {
+  } else if (commandString[0] == 'C') {
+    String colorStrings[3];
+    int j=0;
+    for (int i = 2; i<commandString.length(); i++) {
+      char sign = commandString[i];
+      if (sign == '\n') {
+        break;
+      } else if (sign == ' ') {
+        j++;
+      } else if (isDigit(sign)) {
+        colorStrings[j] += sign;
+      } else {
+        Serial.println("E: Error in command parsing. Sign unknown.");
+        return;
+      }
+      if (j > 2) {
+        Serial.println("E: Error in command parsing. Too many spaces.");
+        return;
+      }
+    }
+    if (j < 2) {
+      Serial.println("E: Error in command parsing. Too few values.");
+      return;
+    }
+    int rgb[3];
+    for (int i = 0; i<3; i++) {
+      rgb[i] = colorStrings[i].toInt();
+    }
+    for (int i = 0; i<strip.numPixels(); i++) {
+      strip.setPixelColor(i, rgb[0], rgb[1], rgb[2]);
+    }
+    strip.show();
+    
+  } else if (commandString[0] == 'V') {
     String velocityStrings[2];
     int j=0;
-    for (int i = 0; i<commandString.length(); i++) {
+    for (int i = 2; i<commandString.length(); i++) {
       char sign = commandString[i];
       if (sign == '\n') {
         break;
@@ -199,9 +243,16 @@ void executeCommand() {
     velocity = velocities[1];
     speedL = -setAngularVelocity(angularVelocity) - setVelocity(velocity);
     speedR = setAngularVelocity(angularVelocity) - setVelocity(velocity);
+    driving = true;
+    Serial.print(speedL);
+    Serial.print(' ');
+    Serial.println(speedR);
+
     balanceDrive(speedL, speedR);
+    lastCommand = millis();
+  } else {
+    Serial.println("E: Command not known.");
   }
-  lastCommand = millis();
 }
 
 void stop() {
@@ -247,34 +298,35 @@ void publishOdometry() {
 void publishTelemetry() {
   publishIMU();
   publishOdometry();
-  snprintf(debugTelemetry, sizeof(debugTelemetry), "DT: %6ld %6d", angle, motorSpeed);
-  Serial.println(debugTelemetry);
 }
 
 void loop()
 {
   balanceUpdate();
-  uint16_t timeNow = millis();
+  uint32_t timeNow = millis();
   
-  if (timeNow - lastSent > 100) {
-    //mag.read();
+  if (timeNow - lastSent > 20) {
+    if(timeNow - lastMagRead > 100) {
+      mag.read();
+      lastMagRead = timeNow;
+    }
     //publishTelemetry();
     lastSent = timeNow;
   }
   
   if(controlled) {
     int8_t speedL, speedR, angularVelocity, velocity;
+    
     angularVelocity = 0;
     velocity = 0;
     readSerial();
-    if (timeNow - lastCommand > 1000) {
+    timeNow = millis();
+    if (timeNow - lastCommand > 1000 && driving) {
+      driving = false;
+      balanceResetEncoders();
       stop();
     }
-  }
-
-
-
-  if (isBalancing() && musicOn) {
+  } else if (isBalancing() && musicOn) {
     // Once you have it balancing well, uncomment these lines for
     // something fun.
 

@@ -10,12 +10,12 @@
 // balancing algorithm to match your robot.
 
 #define B11 false
-#define B10 false
+#define B10 true
 //#define B11 true
 #if B11
-const int16_t GEAR_RATIO = 111; //84; //124; //b11
+const int16_t GEAR_RATIO = 84; //124; //b11
 #elif B10
-const int16_t GEAR_RATIO = 111; //162;
+const int16_t GEAR_RATIO = 84; //162;
 #else
 const int16_t GEAR_RATIO = 111;// 162; //111; //b10
 #endif
@@ -64,13 +64,16 @@ const int16_t ANGLE_RATE_RATIO = 130;
 // faster until it reaches its maximum motor speed and falls
 // over.  That's where the next constants come in.
 
-const int16_t ANGLE_RESPONSE = 11;
+const int16_t ANGLE_RESPONSE = 9;
 /*#if B11
 const int16_t ANGLE_RESPONSE = 13; //35 //40
 #else
 const int16_t ANGLE_RESPONSE = 11;//13; //35 //40
 #endif
 */
+
+const int16_t ANGLE_RATE_RESPONSE = 500;
+
 // DISTANCE_RESPONSE determines how much the robot resists being
 // moved away from its starting point.  Counterintuitively, this
 // constant is positive: to move forwards, the robot actually has
@@ -84,7 +87,9 @@ const int16_t DISTANCE_RESPONSE = 110;
 const int16_t DISTANCE_RESPONSE = 73; //70;
 #endif
 */
-const int16_t DISTANCE_RESPONSE = 30;
+const int16_t DISTANCE_RESPONSE = 10;
+
+const int16_t DISTANCE_RESPONSE_I = 0;
 
 
 // DISTANCE_DIFF_RESPONSE determines the response to differences
@@ -95,13 +100,13 @@ const int16_t DISTANCE_RESPONSE = 30;
 // of the right motor.  If this constant is too small, the robot
 // will spin left and right as it rocks back and forth; if it is
 // too large it will become unstable.
-const int16_t DISTANCE_DIFF_RESPONSE = -50; //-120;
+const int16_t DISTANCE_DIFF_RESPONSE = -50;
 
 // SPEED_RESPONSE supresses the large back-and-forth oscillations
 // caused by DISTANCE_RESPONSE.  Increase this until these
 // oscillations die down after a few cycles; but if you increase
 // it too much it will tend to shudder or vibrate wildly.
-const int16_t SPEED_RESPONSE = 1000;
+const int16_t SPEED_RESPONSE = 2500;
 
 /*#if B11
 const int16_t SPEED_RESPONSE = 8000;
@@ -120,7 +125,11 @@ const uint8_t CALIBRATION_ITERATIONS = 100;
 // These variables will be accessible from your sketch.
 extern int32_t angle; // units: millidegrees
 extern int32_t angleRate; // units: degrees/s (or millidegrees/ms)
-extern int16_t motorSpeed; // current (average) motor speed setting
+extern int32_t motorSpeed; // current (average) motor speed setting
+extern int32_t angleRateResponse;
+extern int32_t angleResponse;
+extern int32_t distanceResponse;
+extern int32_t speedResponse;
 
 // These variables must be defined in your sketch.
 extern LSM6 imu;
