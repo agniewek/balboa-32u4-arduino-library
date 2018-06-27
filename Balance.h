@@ -130,6 +130,7 @@ extern int32_t angleRateResponse;
 extern int32_t angleResponse;
 extern int32_t distanceResponse;
 extern int32_t speedResponse;
+extern int32_t distanceLeft, distanceRight;
 
 // These variables must be defined in your sketch.
 extern LSM6 imu;
@@ -173,3 +174,5 @@ void balanceUpdateSensors();
 // after a large motion, so that robot does not try to make a
 // huge correction to get back to "zero".
 void balanceResetEncoders();
+
+void integrateEncoders();

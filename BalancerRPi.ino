@@ -98,7 +98,6 @@ void playSong()
 
 int8_t setAngularVelocity(float angularVelocity) {
   int8_t wheelSpeed = angularVelocity * GEAR_RATIO * 12 * 4 / 6 / 1000 / 20;
-  Serial.println(wheelSpeed);
   return wheelSpeed;
 }
 
@@ -142,9 +141,20 @@ void standUp()
   ledGreen(1);
   ledRed(1);
   ledYellow(1);
+  int distanceDiff = 0;
   while (buzzer.isPlaying());
-  motors.setSpeeds(-MOTOR_SPEED_LIMIT, -MOTOR_SPEED_LIMIT);
-  delay(200);
+  for(int speed = 0; speed < MOTOR_SPEED_LIMIT; speed++){
+    integrateEncoders();
+    distanceDiff = distanceLeft - distanceRight;    
+    motors.setSpeeds(-speed - 2 * distanceDiff, -speed + 2 * distanceDiff);
+    delay(2);
+  }
+  for(int i = 0; i < 50; i++) {
+    integrateEncoders();
+    distanceDiff = distanceLeft - distanceRight;    
+    motors.setSpeeds(-MOTOR_SPEED_LIMIT - 10 * distanceDiff, -MOTOR_SPEED_LIMIT + 10 * distanceDiff);
+    delay(1);
+  }
   motors.setSpeeds(MOTOR_SPEED_LIMIT, MOTOR_SPEED_LIMIT);
   for (uint8_t i = 0; i < 30; i++)
   {
@@ -161,10 +171,12 @@ void standUp()
 }
 
 void layDown() {
-  motors.setSpeeds(-100, -100);
-  delay(300);
-  motors.setSpeeds(0, 0);
-  delay(2000);
+  if(isBalancing()) {
+    motors.setSpeeds(-100, -100);
+    delay(300);
+    motors.setSpeeds(0, 0);
+    delay(2000);
+  }
   return;
 }
 
@@ -172,8 +184,10 @@ void executeCommand() {
   Serial.print("D: command received: ");
   Serial.println(commandString);
   if (commandString[0] == 'S') {
-    Serial.println("D: standUp");
-    standUp();
+    if(angle > 50000) {
+      Serial.println("D: standUp");
+      standUp();
+    }
   } else if (commandString[0] == 'L') {
     Serial.println("D: layDown");
     layDown();
@@ -244,9 +258,6 @@ void executeCommand() {
     speedL = -setAngularVelocity(angularVelocity) - setVelocity(velocity);
     speedR = setAngularVelocity(angularVelocity) - setVelocity(velocity);
     driving = true;
-    Serial.print(speedL);
-    Serial.print(' ');
-    Serial.println(speedR);
 
     balanceDrive(speedL, speedR);
     lastCommand = millis();
@@ -326,7 +337,8 @@ void loop()
       balanceResetEncoders();
       stop();
     }
-  } else if (isBalancing() && musicOn) {
+  }
+  if (isBalancing() && musicOn) {
     // Once you have it balancing well, uncomment these lines for
     // something fun.
 
