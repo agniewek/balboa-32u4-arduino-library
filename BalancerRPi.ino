@@ -53,7 +53,7 @@ int16_t lastEncoderLeft = 0, lastEncoderRight = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, NEO_PIN, NEO_RGBW + NEO_KHZ800);
 
 String commandString = "";
-char accValues[40], gyroValues[40], magValues[40], odomValues[40], debugTelemetry[40];
+char imuValues[60], magValues[40], odomValues[40], debugTelemetry[40];
 void initMag() {
   if (!mag.init())
   {
@@ -143,16 +143,16 @@ void standUp()
   ledYellow(1);
   int distanceDiff = 0;
   while (buzzer.isPlaying());
-  for(int speed = 0; speed < MOTOR_SPEED_LIMIT; speed++){
+  for(int speed = 0; speed < MOTOR_SPEED_LIMIT - 15; speed++){
     integrateEncoders();
     distanceDiff = distanceLeft - distanceRight;    
-    motors.setSpeeds(-speed - 2 * distanceDiff, -speed + 2 * distanceDiff);
-    delay(2);
+    motors.setSpeeds(-speed - 1 * distanceDiff, -speed + 1 * distanceDiff);
+    delay(3);
   }
   for(int i = 0; i < 50; i++) {
     integrateEncoders();
     distanceDiff = distanceLeft - distanceRight;    
-    motors.setSpeeds(-MOTOR_SPEED_LIMIT - 10 * distanceDiff, -MOTOR_SPEED_LIMIT + 10 * distanceDiff);
+    motors.setSpeeds(-MOTOR_SPEED_LIMIT + 15 - 10 * distanceDiff, -MOTOR_SPEED_LIMIT + 15 + 10 * distanceDiff);
     delay(1);
   }
   motors.setSpeeds(MOTOR_SPEED_LIMIT, MOTOR_SPEED_LIMIT);
@@ -282,13 +282,9 @@ char readSerial() {
 }
 
 void publishIMU() {
-  snprintf(accValues, sizeof(accValues), "A: %6d %6d %6d",
-    imu.a.x, imu.a.y, imu.a.z);
-  Serial.println(accValues);
-
-  snprintf(gyroValues, sizeof(gyroValues), "G: %6d %6d %6d",
-    imu.g.x, imu.g.y, imu.g.z);
-  Serial.println(gyroValues);
+  snprintf(imuValues, sizeof(imuValues), "I: %6d %6d %6d %6d %6d %6d",
+    imu.a.x, imu.a.y, imu.a.z, imu.g.x, imu.g.y, imu.g.z);
+  Serial.println(imuValues);
 
   snprintf(magValues, sizeof(magValues), "M: %6d %6d %6d",
     mag.m.x, mag.m.y, mag.m.z);
