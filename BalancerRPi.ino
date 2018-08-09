@@ -173,7 +173,7 @@ void standUp()
   {
     delay(UPDATE_TIME_MS);
     balanceUpdateSensors();
-    if(angle < 50000 and angle > -20000)
+    if(angle < 50000 and angle > -45000)
     {
       Serial.println("D: Start balancing!");
       break;
@@ -322,7 +322,6 @@ void publishTelemetry() {
 
 void loop()
 {
-  Serial.println(angle);
   balanceUpdate();
   uint32_t timeNow = millis();
   
