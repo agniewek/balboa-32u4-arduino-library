@@ -142,7 +142,7 @@ void lyingDown()
     }
     else
     {
-      angle = -80000;
+      angle = -75000;
     }
     distanceLeft = 0;
     distanceRight = 0;

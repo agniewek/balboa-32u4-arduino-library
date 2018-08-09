@@ -145,9 +145,9 @@ void standUp()
   int distanceDiff = 0;
   while (buzzer.isPlaying());
 
-  if (angle > 70000) {
+  if (angle > 0) {
     standupvalue = 1;
-  } else if (angle < -70000) {
+  } else if (angle <  0) {
     standupvalue = -1;
   }
   
@@ -161,7 +161,7 @@ void standUp()
     for(int i = 0; i < 50; i++) {
       integrateEncoders();
       distanceDiff = distanceLeft - distanceRight;    
-      motors.setSpeeds(standupvalue * -MOTOR_SPEED_LIMIT + 15 - 10 * distanceDiff, standupvalue * -MOTOR_SPEED_LIMIT + 15 + 10 * distanceDiff);
+      motors.setSpeeds(standupvalue * (-MOTOR_SPEED_LIMIT + 15) - 10 * distanceDiff, standupvalue * (-MOTOR_SPEED_LIMIT + 15) + 10 * distanceDiff);
       delay(1);
     }
 
@@ -173,7 +173,7 @@ void standUp()
   {
     delay(UPDATE_TIME_MS);
     balanceUpdateSensors();
-    if(angle < 50000 and angle > -50000)
+    if(angle < 50000 and angle > -20000)
     {
       Serial.println("D: Start balancing!");
       break;
@@ -322,6 +322,7 @@ void publishTelemetry() {
 
 void loop()
 {
+  Serial.println(angle);
   balanceUpdate();
   uint32_t timeNow = millis();
   
