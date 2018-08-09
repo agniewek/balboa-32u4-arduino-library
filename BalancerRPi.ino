@@ -136,6 +136,7 @@ void driveAround()
 
 void standUp()
 {
+  int standupvalue = 1;
   motors.setSpeeds(0, 0);
   buzzer.play("!>grms>a16>a16>g2");
   ledGreen(1);
@@ -143,24 +144,36 @@ void standUp()
   ledYellow(1);
   int distanceDiff = 0;
   while (buzzer.isPlaying());
+
+  if (angle > 0) {
+    standupvalue = 1;
+  } else if (angle <  0) {
+    standupvalue = -1;
+  }
+  
   for(int speed = 0; speed < MOTOR_SPEED_LIMIT - 15; speed++){
-    integrateEncoders();
-    distanceDiff = distanceLeft - distanceRight;    
-    motors.setSpeeds(-speed - 1 * distanceDiff, -speed + 1 * distanceDiff);
-    delay(3);
-  }
-  for(int i = 0; i < 50; i++) {
-    integrateEncoders();
-    distanceDiff = distanceLeft - distanceRight;    
-    motors.setSpeeds(-MOTOR_SPEED_LIMIT + 15 - 10 * distanceDiff, -MOTOR_SPEED_LIMIT + 15 + 10 * distanceDiff);
-    delay(1);
-  }
-  motors.setSpeeds(MOTOR_SPEED_LIMIT, MOTOR_SPEED_LIMIT);
+      integrateEncoders();
+      distanceDiff = distanceLeft - distanceRight;    
+      motors.setSpeeds(standupvalue * -speed - 1 * distanceDiff, standupvalue * -speed + 1 * distanceDiff);
+      delay(3);
+    }
+    
+    for(int i = 0; i < 50; i++) {
+      integrateEncoders();
+      distanceDiff = distanceLeft - distanceRight;    
+      motors.setSpeeds(standupvalue * (-MOTOR_SPEED_LIMIT + 15) - 10 * distanceDiff, standupvalue * (-MOTOR_SPEED_LIMIT + 15) + 10 * distanceDiff);
+      delay(1);
+    }
+
+    motors.setSpeeds(standupvalue * MOTOR_SPEED_LIMIT, standupvalue * MOTOR_SPEED_LIMIT);
+    
+
+  
   for (uint8_t i = 0; i < 30; i++)
   {
     delay(UPDATE_TIME_MS);
     balanceUpdateSensors();
-    if(angle < 50000)
+    if(angle < 50000 and angle > -45000)
     {
       Serial.println("D: Start balancing!");
       break;
