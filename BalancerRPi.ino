@@ -322,7 +322,6 @@ void publishTelemetry() {
 
 void loop()
 {
-  Serial.println(angle);
   balanceUpdate();
   uint32_t timeNow = millis();
   
