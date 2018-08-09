@@ -10,7 +10,12 @@ int32_t driveLeft;
 int32_t distanceRight;
 int32_t speedRight;
 int32_t driveRight;
-int16_t motorSpeed;
+int32_t motorSpeed;
+int32_t angleRateResponse;
+int32_t angleResponse;
+int32_t distanceResponse;
+int32_t distanceResponseI;
+int32_t speedResponse;
 bool isBalancingStatus;
 bool balanceUpdateDelayedStatus;
 
@@ -32,7 +37,7 @@ void balanceSetup()
   {
     while(true)
     {
-      Serial.println("Failed to detect and initialize IMU!");
+      Serial.println("E: Failed to detect and initialize IMU!");
       delay(200);
     }
   }
@@ -77,6 +82,14 @@ void balance()
   // you can think of it as an angular estimate of how far off we
   // are from being balanced.
   int32_t risingAngleOffset = angleRate * ANGLE_RATE_RATIO + angle;
+  static int32_t distanceSum = 0;
+  distanceSum += distanceLeft + distanceRight;
+  
+  angleResponse = ANGLE_RESPONSE * risingAngleOffset;
+  angleRateResponse = ANGLE_RATE_RESPONSE * angleRate;
+  distanceResponse = DISTANCE_RESPONSE * (distanceLeft + distanceRight);
+  distanceResponseI = (DISTANCE_RESPONSE_I * distanceSum) / 15;
+  speedResponse = SPEED_RESPONSE * (speedLeft + speedRight);
 
   // Combine risingAngleOffset with the distance and speed
   // variables, using the calibration constants defined in
@@ -85,9 +98,11 @@ void balance()
   // is added to the motor speeds, since a *change* in speed is
   // what causes the robot to tilt one way or the other.
   motorSpeed += (
-    + ANGLE_RESPONSE * risingAngleOffset
-    + DISTANCE_RESPONSE * (distanceLeft + distanceRight)
-    + SPEED_RESPONSE * (speedLeft + speedRight)
+    + angleResponse
+    + angleRateResponse
+    + distanceResponse
+    + speedResponse
+    + distanceResponseI
     ) / 100 / GEAR_RATIO;
 
   if (motorSpeed > MOTOR_SPEED_LIMIT)
@@ -197,7 +212,7 @@ void balanceUpdate()
   balanceUpdateSensors();
   balanceDoDriveTicks();
 
-  if (imu.a.x < 7000)
+  if ((imu.a.x < 1000 && imu.a.z > 0) || (imu.a.x < 7500 && imu.a.z < 0))
   {
     lyingDown();
     isBalancingStatus = false;
