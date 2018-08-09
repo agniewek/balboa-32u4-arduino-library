@@ -9,12 +9,15 @@
 // Adjust the ratio below to scale various constants in the
 // balancing algorithm to match your robot.
 
-//#define B11 false
-#define B11 true
+#define B11 false
+#define B10 true
+//#define B11 true
 #if B11
 const int16_t GEAR_RATIO = 84; //124; //b11
+#elif B10
+const int16_t GEAR_RATIO = 84; //162;
 #else
-const int16_t GEAR_RATIO = 162; //111; //b10
+const int16_t GEAR_RATIO = 111;// 162; //111; //b10
 #endif
 
 
@@ -25,7 +28,7 @@ const int16_t GEAR_RATIO = 162; //111; //b10
 //
 // If you want to use speeds faster than 300, you should add
 // the line "motors.allowTurbo(true);" to setup().
-const int16_t MOTOR_SPEED_LIMIT = 400;
+const int16_t MOTOR_SPEED_LIMIT = 300; //400;
 
 // This constant relates the angle to its rate of change for a
 // robot that is falling from a nearly-vertical position or
@@ -36,7 +39,7 @@ const int16_t MOTOR_SPEED_LIMIT = 400;
 // has fallen by 90 degrees it will be moving at about
 // 90,000/140 = 642 deg/s.  See the end of Balancer.ino for one
 // way to calibrate this value.
-const int16_t ANGLE_RATE_RATIO = 140;
+const int16_t ANGLE_RATE_RATIO = 130;
 
 //const int16_t ANGLE_RATE_RATIO = 135;
 
@@ -61,12 +64,15 @@ const int16_t ANGLE_RATE_RATIO = 140;
 // faster until it reaches its maximum motor speed and falls
 // over.  That's where the next constants come in.
 
-
-#if B11
+const int16_t ANGLE_RESPONSE = 9;
+/*#if B11
 const int16_t ANGLE_RESPONSE = 13; //35 //40
 #else
-const int16_t ANGLE_RESPONSE = 13; //35 //40
+const int16_t ANGLE_RESPONSE = 11;//13; //35 //40
 #endif
+*/
+
+const int16_t ANGLE_RATE_RESPONSE = 500;
 
 // DISTANCE_RESPONSE determines how much the robot resists being
 // moved away from its starting point.  Counterintuitively, this
@@ -75,11 +81,16 @@ const int16_t ANGLE_RESPONSE = 13; //35 //40
 // forwards.  When this constant is adjusted properly, the robot
 // will no longer zoom off in one direction, but it will drive
 // back and forth a few times before falling down.
-#if B11
+/*#if B11
 const int16_t DISTANCE_RESPONSE = 110;
 #else
-const int16_t DISTANCE_RESPONSE = 70;
+const int16_t DISTANCE_RESPONSE = 73; //70;
 #endif
+*/
+const int16_t DISTANCE_RESPONSE = 10;
+
+const int16_t DISTANCE_RESPONSE_I = 0;
+
 
 // DISTANCE_DIFF_RESPONSE determines the response to differences
 // between the left and right motors, preventing undesired
@@ -95,16 +106,18 @@ const int16_t DISTANCE_DIFF_RESPONSE = -50;
 // caused by DISTANCE_RESPONSE.  Increase this until these
 // oscillations die down after a few cycles; but if you increase
 // it too much it will tend to shudder or vibrate wildly.
-#if B11
+const int16_t SPEED_RESPONSE = 2500;
+
+/*#if B11
 const int16_t SPEED_RESPONSE = 8000;
 #else
-const int16_t SPEED_RESPONSE = 4400;
+const int16_t SPEED_RESPONSE = 3300; // 4400;
 #endif
-
+*/
 
 // The balancing code is all based on a 100 Hz update rate; if
 // you change this, you will have to adjust many other things.
-const uint8_t UPDATE_TIME_MS = 5;
+const uint8_t UPDATE_TIME_MS = 10;
 
 // Take 100 measurements initially to calibrate the gyro.
 const uint8_t CALIBRATION_ITERATIONS = 100;
@@ -112,7 +125,12 @@ const uint8_t CALIBRATION_ITERATIONS = 100;
 // These variables will be accessible from your sketch.
 extern int32_t angle; // units: millidegrees
 extern int32_t angleRate; // units: degrees/s (or millidegrees/ms)
-extern int16_t motorSpeed; // current (average) motor speed setting
+extern int32_t motorSpeed; // current (average) motor speed setting
+extern int32_t angleRateResponse;
+extern int32_t angleResponse;
+extern int32_t distanceResponse;
+extern int32_t speedResponse;
+extern int32_t distanceLeft, distanceRight;
 
 // These variables must be defined in your sketch.
 extern LSM6 imu;
@@ -156,3 +174,5 @@ void balanceUpdateSensors();
 // after a large motion, so that robot does not try to make a
 // huge correction to get back to "zero".
 void balanceResetEncoders();
+
+void integrateEncoders();
